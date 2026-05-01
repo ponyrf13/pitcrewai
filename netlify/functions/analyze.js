@@ -1,52 +1,60 @@
-export default async (request) => {
-  if (request.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+const https = require('https');
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const API_KEY = Deno.env.get('GEMINI_API_KEY');
+  const API_KEY = process.env.GEMINI_API_KEY;
   if (!API_KEY) {
-    return new Response(JSON.stringify({ error: 'API key no configurada' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return { statusCode: 500, body: JSON.stringify({ error: 'API key no configurada' }) };
   }
-
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
   try {
-    const body = await request.json();
-    const prompt = body.prompt;
+    const body = JSON.parse(event.body);
+    const aiPrompt = body.prompt;
 
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-      })
+    const requestBody = JSON.stringify({
+      contents: [{ parts: [{ text: aiPrompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return new Response(JSON.stringify({ error: data }), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' }
+    const response = await new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: 'generativelanguage.googleapis.com',
+        path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(requestBody)
+        }
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => resolve({ status: res.statusCode, body: data }));
       });
+      req.on('error', reject);
+      req.write(requestBody);
+      req.end();
+    });
+
+    if (response.status !== 200) {
+      return { statusCode: response.status, body: JSON.stringify({ error: response.body }) };
     }
 
+    const data = JSON.parse(response.body);
     const text = data.candidates[0].content.parts[0].text;
-    return new Response(JSON.stringify({ result: text }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ result: text })
+    };
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message })
+    };
   }
 };
-
-export const config = { path: '/.netlify/functions/analyze' };
