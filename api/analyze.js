@@ -1,6 +1,4 @@
-const https = require('https');
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -13,33 +11,21 @@ module.exports = async (req, res) => {
   try {
     const { prompt } = req.body;
 
-    const requestBody = JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-    });
-
-    const response = await new Promise((resolve, reject) => {
-      const req2 = https.request({
-        hostname: 'generativelanguage.googleapis.com',
-        path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+      {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(requestBody)
-        }
-      }, (r) => {
-        let data = '';
-        r.on('data', chunk => data += chunk);
-        r.on('end', () => resolve({ status: r.statusCode, body: data }));
-      });
-      req2.on('error', reject);
-      req2.write(requestBody);
-      req2.end();
-    });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+        })
+      }
+    );
 
-    const data = JSON.parse(response.body);
+    const data = await response.json();
 
-    if (response.status !== 200) {
+    if (!response.ok) {
       return res.status(response.status).json({ error: data });
     }
 
@@ -49,4 +35,4 @@ module.exports = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-};
+}
