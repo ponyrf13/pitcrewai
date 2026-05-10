@@ -1,11 +1,10 @@
-// v3
+// v4 - using fetch
 const express = require('express');
-const https = require('https');
 const path = require('path');
 
 const app = express();
 app.use(express.json());
-app.use((req, res, next) => { console.log(req.method, req.path); next(); });
+
 app.post('/api/analyze', async (req, res) => {
   console.log('handler called');
   const API_KEY = process.env.GEMINI_API_KEY;
@@ -14,40 +13,35 @@ app.post('/api/analyze', async (req, res) => {
 
   try {
     const prompt = req.body && req.body.prompt;
-    console.log('prompt exists:', !!prompt, 'body:', JSON.stringify(req.body));
     if (!prompt) return res.status(400).json({ error: 'No prompt' });
 
-    const body = JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-    });
-
-    const result = await new Promise((resolve, reject) => {
-
-      const r = https.request({
-        hostname: 'generativelanguage.googleapis.com',
-        path: '/v1beta/models/gemini-1.5-flash:generateContent?key=' + API_KEY,
+    console.log('calling gemini...');
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+      {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body)
-        }
-      }, (response) => {
-        let d = '';
-        response.on('data', c => d += c);
-        response.on('end', () => resolve({ status: response.statusCode, body: d }));
-      });
-      r.on('error', reject);
-      r.write(body);
-      r.end();
-    });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+        })
+      }
+    );
 
-    const data = JSON.parse(result.body);
-    if (result.status !== 200) return res.status(result.status).json({ error: data });
+    console.log('gemini status:', response.status);
+    const data = await response.json();
 
-    return res.status(200).json({ result: data.candidates[0].content.parts[0].text });
+    if (!response.ok) {
+      console.log('gemini error:', JSON.stringify(data));
+      return res.status(response.status).json({ error: data });
+    }
+
+    const text = data.candidates[0].content.parts[0].text;
+    console.log('success, text length:', text.length);
+    return res.status(200).json({ result: text });
+
   } catch (err) {
-    console.log('ERROR:', err.message, err.stack);
+    console.log('ERROR:', err.message);
     return res.status(500).json({ error: err.message });
   }
 });
