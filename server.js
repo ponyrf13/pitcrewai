@@ -14,6 +14,7 @@ app.post('/api/analyze', async (req, res) => {
 
   try {
     const prompt = req.body && req.body.prompt;
+    console.log('prompt exists:', !!prompt, 'body:', JSON.stringify(req.body));
     if (!prompt) return res.status(400).json({ error: 'No prompt' });
 
     const body = JSON.stringify({
