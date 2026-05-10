@@ -1,4 +1,3 @@
-
 const https = require('https');
 
 module.exports = async (req, res) => {
@@ -22,7 +21,7 @@ module.exports = async (req, res) => {
     const response = await new Promise((resolve, reject) => {
       const req2 = https.request({
         hostname: 'generativelanguage.googleapis.com',
-        path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+        path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
