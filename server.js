@@ -23,6 +23,8 @@ app.post('/api/analyze', async (req, res) => {
     });
 
     const result = await new Promise((resolve, reject) => {
+      console.log('gemini status:', result.status);
+console.log('gemini response:', result.body.slice(0,200));
       const r = https.request({
         hostname: 'generativelanguage.googleapis.com',
         path: '/v1beta/models/gemini-1.5-flash:generateContent?key=' + API_KEY,
