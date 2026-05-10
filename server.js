@@ -48,6 +48,7 @@ console.log('gemini response:', result.body.slice(0,200));
 
     return res.status(200).json({ result: data.candidates[0].content.parts[0].text });
   } catch (err) {
+    console.log('ERROR:', err.message, err.stack);
     return res.status(500).json({ error: err.message });
   }
 });
