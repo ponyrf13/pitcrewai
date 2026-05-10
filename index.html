@@ -345,6 +345,18 @@ footer span { color: var(--accent); }
 </footer>
 
 <script>
+// Fix browser back button
+history.pushState(null, '', window.location.href);
+window.addEventListener('popstate', () => {
+  if (document.getElementById('results-block').style.display !== 'none') {
+    resetForm();
+    history.pushState(null, '', window.location.href);
+  } else if (document.getElementById('loading-block').style.display !== 'none') {
+    resetForm();
+    history.pushState(null, '', window.location.href);
+  }
+});
+
 function toggleCheck(el) { el.classList.toggle('active'); el.querySelector('input').checked = el.classList.contains('active'); }
 
 function updateSlider(el) {
@@ -386,7 +398,7 @@ async function runAnalysis() {
     if (si < 5) { document.getElementById('step-'+si).className = 'loader-step active'; si++; }
   }, 1000);
 
-  const prompt = `Eres un experto técnico en Assetto Corsa y Custom Shaders Patch. Genera una configuración optimizada.
+  const aiPrompt = `Eres un experto técnico en Assetto Corsa y Custom Shaders Patch. Genera una configuración optimizada.
 
 HARDWARE:
 - GPU: ${d.gpu}
@@ -413,10 +425,10 @@ Responde SOLO con JSON válido, sin texto extra ni markdown:
 Mínimo: 10 ajustes AC, 12 CSP, 5 CM, 5 fixes. Valores muy concretos.`;
 
   try {
-    const res = await fetch('/.netlify/functions/analyze', {
+    const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt: aiPrompt })
     });
 
     clearInterval(stepInt);
