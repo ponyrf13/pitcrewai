@@ -7,6 +7,7 @@ const app = express();
 app.use(express.json());
 app.use((req, res, next) => { console.log(req.method, req.path); next(); });
 app.post('/api/analyze', async (req, res) => {
+  console.log('handler called');
   const API_KEY = process.env.GEMINI_API_KEY;
   if (!API_KEY) return res.status(500).json({ error: 'API key no configurada' });
 
