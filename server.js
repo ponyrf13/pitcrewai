@@ -1,5 +1,4 @@
-// v2 - fix api route
-const express = require('express');
+// v3
 const express = require('express');
 const https = require('https');
 const path = require('path');
@@ -25,7 +24,10 @@ app.post('/api/analyze', async (req, res) => {
         hostname: 'generativelanguage.googleapis.com',
         path: '/v1beta/models/gemini-1.5-flash:generateContent?key=' + API_KEY,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body)
+        }
       }, (response) => {
         let d = '';
         response.on('data', c => d += c);
@@ -52,5 +54,4 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.get('/test', (req, res) => res.json({ ok: true, routes: 'working' }));
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
