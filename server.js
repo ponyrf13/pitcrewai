@@ -4,7 +4,6 @@ const path = require('path');
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/analyze', async (req, res) => {
   const API_KEY = process.env.GEMINI_API_KEY;
@@ -43,6 +42,8 @@ app.post('/api/analyze', async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
